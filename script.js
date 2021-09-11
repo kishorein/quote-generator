@@ -21,7 +21,7 @@ function removeLoadingSpinner() {
 async function getQuote() {
     
     showLoadingSpinner();
-    const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+    const proxyUrl = 'https://thingproxy.freeboard.io/fetch/';
     const apiUrl = 'http://api.forismatic.com/api/1.0/?method=getQuote&lang=en&format=json';
         try {
             const response = await fetch(proxyUrl + apiUrl);
