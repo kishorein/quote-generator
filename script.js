@@ -19,26 +19,24 @@ function removeLoadingSpinner() {
 }
 
 async function getQuote() {
-    
     showLoadingSpinner();
-    const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-    const apiUrl = 'http://api.forismatic.com/api/1.0/?method=getQuote&lang=en&format=json';
+    const apiUrl = 'https://type.fit/api/quotes';
         try {
-            const response = await fetch(proxyUrl + apiUrl);
+            const response = await fetch(apiUrl);
             const data = await response.json();
-
+            const quote = data[Math.floor(Math.random() * data.length)];
             if (data.quoteAuthor === '') {
-                authorText.innerText = 'Unknown author';
+                authorText.textContent = 'Unknown author';
             } else {
-                authorText.innerText = data.quoteAuthor;
+                authorText.textContent = quote.author;
             }
 
-            if(data.quoteText.length > 120) {
+            if(quote.length > 120) {
                 quoteText.classList.add('long-quote');
             } else {
                 quoteText.classList.remove('long-quote');
             }
-            quoteText.innerText = data.quoteText;
+            quoteText.innerText = quote.text;
             removeLoadingSpinner();
         }
         catch(error) {
