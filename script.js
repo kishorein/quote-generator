@@ -5,54 +5,86 @@ const twitterbtn = document.getElementById('twitter-btn');
 const newQuoteBtn = document.getElementById('new-quote');
 const loader = document.getElementById("loader");
 
-
 function showLoadingSpinner() {
     loader.hidden = false;
     quote.hidden = true;
+    newQuoteBtn.disabled = true;
 }
 
-function removeLoadingSpinner() { 
-    if(!loader.hidden) {
+function removeLoadingSpinner() {
+    if (!loader.hidden) {
         quote.hidden = false;
         loader.hidden = true;
     }
+    newQuoteBtn.disabled = false;
+}
+
+function showFallbackMessage(msg = "Couldn't fetch a quote") {
+    removeLoadingSpinner();
+    quoteText.innerText = `${msg}`;
+    authorText.innerText = navigator.onLine ? "Please try again." : "You’re offline.";
+    newQuoteBtn.innerText = "Retry";
 }
 
 async function getQuote() {
-    showLoadingSpinner();
-    const apiUrl = 'https://type.fit/api/quotes';
-        try {
-            const response = await fetch(apiUrl);
-            const data = await response.json();
-            const quote = data[Math.floor(Math.random() * data.length)];
-            if (data.quoteAuthor === '') {
-                authorText.textContent = 'Unknown author';
-            } else {
-                authorText.textContent = quote.author;
-            }
 
-            if(quote.length > 120) {
-                quoteText.classList.add('long-quote');
-            } else {
-                quoteText.classList.remove('long-quote');
-            }
-            quoteText.innerText = quote.text;
-            removeLoadingSpinner();
+    if (getQuote.isRunning) return;
+
+    getQuote.isRunning = true;
+    showLoadingSpinner();
+
+    // Fetch quote
+    const apiUrl = 'https://dummyjson.com/quotes/random';
+    const controller = new AbortController();
+    const timeoutTimer = setTimeout(() => controller.abort(), 30000);
+
+    try {
+        const response = await fetch(apiUrl, {
+            signal: controller.signal,
+            cache: 'no-store'
+        });
+
+        clearTimeout(timeoutTimer);
+
+        if (!response.ok) {
+            showFallbackMessage(`OOPS! Server seems to be busy`);
+            return;
         }
-        catch(error) {
-            console.log(error);
-            getQuote();  
+
+        const data = await response.json();
+        authorText.textContent = (data.author?.trim()) || 'Unknown';
+        
+        if (data.quote && data.quote.length > 120) {
+            quoteText.classList.add('long-quote');
+        } else {
+            quoteText.classList.remove('long-quote');
         }
+
+        quoteText.innerText = data.quote || '—';
+
+        removeLoadingSpinner();
+        newQuoteBtn.innerText = "New Quote";
+
+    } catch (ex) {
+        if (ex.name === "AbortError") {
+            showFallbackMessage("Request timed out (30s)");
+        } else {
+            showFallbackMessage("Network error, please retry");
+        }
+    } finally {
+        clearTimeout(timeoutTimer);
+        getQuote.isRunning = false;
+    }
 }
 
 function tweetQuote() {
     const quote = quoteText.innerText;
     const author = authorText.innerText;
-    const twitterUrl = `https://twitter.com/intent/tweet?text=${quote} Author: ${author}`;
-    window.open(twitterUrl,'_blank');
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(quote)} - ${encodeURIComponent(author)}`;
+    window.open(twitterUrl, '_blank');
 }
 
-newQuoteBtn.addEventListener('click',getQuote);
-twitterbtn.addEventListener('click',tweetQuote);
-getQuote();
+newQuoteBtn.addEventListener('click', getQuote);
+twitterbtn.addEventListener('click', tweetQuote);
 
+getQuote();
